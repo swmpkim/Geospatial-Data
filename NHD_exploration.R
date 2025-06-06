@@ -106,6 +106,9 @@ gc()
 ms_lines2 <- terra::vect(path_ms_hydrogr,
                          layer = "NHDFlowline",
                          proxy = TRUE)
+
+
+
 ms_lines2_filtered <- terra::query(ms_lines2,
                                    sql = "SELECT * FROM NHDFlowline WHERE 
    fcode_description LIKE 'Stream/River%' OR 
