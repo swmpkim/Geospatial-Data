@@ -7,7 +7,9 @@ path_ms_hydrogr <- here::here("National Hydrography Dataset",
                               "NHD_H_Mississippi_State_GPKG",
                               "NHD_H_Mississippi_State_GPKG.gpkg")
 
-lyrs <- st_layers(path_ms_hydrogr)
+# get layers
+lyrs.sf <- st_layers(path_ms_hydrogr)
+lyrs.tr <- vector_layers(path_ms_hydrogr)
 
 # HUC10 layer ----
 ms_huc10 <- st_read(path_ms_hydrogr,
@@ -48,12 +50,43 @@ waterbodySizes2 |>
     knitr::kable()
 
 # NHDLine layer ----
-ms_lines <- st_read(path_ms_hydrogr,
+# sf
+ms_lines_sf <- st_read(path_ms_hydrogr,
                     layer = "NHDLine")
-table(ms_lines$fcode_description)
+glimpse(ms_lines_sf)
+table(ms_lines_sf$fcode_description)
+ms_lines_summ_sf <- ms_lines_sf |> 
+    st_drop_geometry() |> 
+    summarize(.by = fcode_description,
+              length_km = sum(lengthkm, na.rm = TRUE)) |> 
+    mutate(length_mi = length_km / 1.609) |> 
+    arrange(fcode_description)
+knitr::kable(ms_lines_summ_sf,
+             digits = 1,
+             format.args = list(big.mark = ","))
 # dams, weirs, locks
 
-rm(ms_lines)
+
+# terra
+ms_lines_tr <- vect(path_ms_hydrogr,
+                    layer = "NHDLine")
+glimpse(ms_lines_tr)
+table(ms_lines_tr$fcode_description)
+ms_lines_summ_tr <- as.data.frame(ms_lines_tr) |> 
+    summarize(.by = fcode_description,
+              length_km = sum(lengthkm, na.rm = TRUE)) |> 
+    mutate(length_mi = length_km / 1.609) |> 
+    arrange(fcode_description)
+knitr::kable(ms_lines_summ_tr,
+             digits = 1,
+             format.args = list(big.mark = ","))
+
+# clean up
+rm(list = grep("ms_lines", ls(), value = TRUE))
+gc()
+
+
+
 
 
 # NHDFlowline ----
