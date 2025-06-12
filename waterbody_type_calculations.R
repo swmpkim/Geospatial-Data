@@ -7,6 +7,7 @@ library(sf)
 # library(terra)
 # library(tidyterra)
 library(tigris)  # state boundaries from US Census Bureau
+options(tigris_cache_use = TRUE)
 
 # MS state boundary ----
 
@@ -31,6 +32,10 @@ msep_sf <- st_read(here::here("MSEP boundary",
 
 st_crs(msep_sf)
 # also NAD83, EPSG 4269
+
+# MSEP boundary 2 ----
+library(mseptools)
+data(msep_boundary)
 
 # how big is our area?
 st_area(msep_sf) |> 
@@ -173,3 +178,95 @@ areas_all <- full_join(fileAreas, msAreas) |>
 knitr::kable(areas_all,
              digits = 0,
              format.args = list(big.mark = ","))
+
+# terra proxy ----
+library(terra)
+library(tidyterra)
+fl_proxy <- vect(path_ms_hydrogr, 
+                 layer = "NHDWaterbody",
+                 proxy = TRUE)
+types <- query(fl_proxy, 
+      sql = "SELECT DISTINCT fcode_description FROM NHDWaterbody")
+values(types)
+types <- as.data.frame(types)
+
+types2 <- types |> 
+    filter(str_starts(fcode_description, "Lake/Pond")) |> 
+    mutate(types2 = str_remove(fcode_description, "; Stage .*"),
+           types2 = str_remove(types2, "Hydrographic Category = "))
+
+lakeponds <- query(fl_proxy,
+                   sql = "SELECT * from NHDWaterbody
+                   WHERE fcode_description LIKE 'Lake/Pond%'")
+ggplot(lakeponds) +
+    geom_sf(data = ms,
+            fill = NA,
+            col = "black") +
+    geom_sf(data = msep_boundary,
+            fill = NA,
+            col = "orange") +
+    geom_spatvector(aes(fill = fcode_description),
+                    col = NA)
+
+library(leaflet)
+ms2 <- ms |> 
+    st_transform(crs = "EPSG:4326")
+msep2 <- msep_boundary |> 
+    st_transform(crs = "EPSG:4326")
+lakeponds2 <- lakeponds |> 
+    st_as_sf() |> 
+    st_transform(crs = "EPSG:4326") |> 
+    st_intersection(ms2)
+lakeponds2 <- lakeponds2 |> 
+    mutate(types2 = str_remove(fcode_description, "; Stage .*"),
+           types2 = str_remove(types2, "Hydrographic Category = "))
+
+colorfun <- colorFactor(palette = "viridis",
+                        domain = lakeponds2$types2)
+
+leaflet() |> 
+    addProviderTiles("CartoDB.Positron") |> 
+    addPolylines(data = ms2,
+                 fill = FALSE,
+                 weight = 2,
+                 color = "black") |> 
+    addPolylines(data = msep2,
+                 fill = FALSE,
+                 weight = 2,
+                 color = "orange") |> 
+    addPolygons(data = lakeponds2,
+                stroke = FALSE,
+                fillColor = ~colorfun(types2),
+                fillOpacity = 0.8) |> 
+    addLegend(position = "bottomright",
+              pal = colorfun,
+              values = unique(lakeponds2$types2),
+              opacity = 0.8)
+
+lakeponds3 <- lakeponds2 |> 
+    mutate(sizes = st_area(geometry)) |> 
+    st_drop_geometry()
+lakeponds3 |> 
+    summarize(.by = types2,
+              n = n(),
+              lengths = sum(sizes)) |> 
+    mutate(lengths = units::set_units(lengths, "km2")) |> 
+    knitr::kable(format.args = list(big.mark = ","))
+
+ggplot() +
+    geom_sf(data = ms2,
+            fill = "gray80",
+            col = "black") +
+    geom_sf(data = msep2,
+            fill = NA,
+            col = "orange") +
+    geom_sf(data = lakeponds2,
+            aes(fill = types2),
+            col = NA) +
+    scale_fill_viridis_d() +
+    theme_void()
+ggsave(here::here("pondlakes_ggplot.png"),
+       width = 10,
+       height = 18,
+       units = "in",
+       dpi = 400)
