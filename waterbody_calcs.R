@@ -100,3 +100,18 @@ options(scipen = 999)
 knitr::kable(areas_all,
              digits = 0,
              format.args = list(big.mark = ","))
+
+
+write.csv(areas_all,
+          here::here("Outputs", "waterbody_calcs",
+                     "Calculated_WaterbodyAreas_MS-and-MSEP.csv"),
+          na = "",
+          row.names = FALSE)
+ggsave(plot = p,
+       filename = here::here("Outputs",
+                             "waterbody_calcs",
+                             "Map_of_Waterbodies_MS-and-MSEP.png"),
+       height = 8,
+       width = 5,
+       units = "in",
+       dpi = 400)
