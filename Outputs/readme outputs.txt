@@ -1,7 +1,10 @@
 designated_use_calcs/
-- generated _______, from data files provided by MDEQ in ______ folder and script _______
+- generated 6/13/25, from data files provided by MDEQ in DEQ_designated_uses folder and script 'designated_use_calcs.R'
 - contains:
-
+  - MSEP_designated_use_amounts.xlsx - workbook with two spreadsheets, one for linear calculations (streams/rivers) and one for polygons.  
+    - Linear - three columns. ATTR_VAL, the abbreviation for the use; Description, the use designation; length_mi, sum of individual geometry lengths in miles.
+    - Polygon - four columns. ATTR_VAL and Description as above. area_sqmi is the sum of areas for that designation in square miles; area_acres is the area in acres.
+  - Map_of_MSEP_DesignatedWaters.png - map of the state with the MSEP boundary, and all lines/polygons from the DEQ files, colored by use designation.
 
 
 stream_length_calcs/ 

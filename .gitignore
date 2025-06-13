@@ -5,9 +5,14 @@
 .DS_Store
 .quarto
 
+# data folders
 EnviroAtlas - EPA/
 HUCs - National Boundary Dataset/
 National Hydrography Dataset/
 EPA NHD/
 MSEP boundary/
+NWI/
+DEQ_designated_uses/
+
+# other outputs I don't want to commit
 *.png
